@@ -2,7 +2,7 @@
 _signalfx-to-statuspage_ is a simple Lambda function that allows you to publish a SignalFx chart to your StatusPage.io 
 public metrics using a SignalFlow program. 
 
-More information on how you can publish SignalFx metrics to StatusPage.io using SignalFlow can be found on our [Blog](https://medium.com/poka-techblog/TODO).
+More information on how you can publish SignalFx metrics to StatusPage.io using SignalFlow can be found on our [Blog](https://medium.com/poka-techblog/integrate-signalfx-with-statuspage-io-effortlessly-using-signalflow-6118d878c703).
 
 ## Requirements
  * The _AWS CLI_ installed and configured.
