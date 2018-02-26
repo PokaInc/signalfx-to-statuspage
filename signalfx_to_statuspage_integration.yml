@@ -1,0 +1,73 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "A simple Lambda function that allows you to publish a SignalFx chart to your StatusPage.io public metrics"
+
+Parameters:
+  StatusPageApiKey:
+    Type: String
+    Description: Can be found in the API tab of the "Manage Account" page in StatusPage
+    NoEcho: true
+  StatusPagePageId:
+    Type: String
+    Description: Unique ID for your organization in StatusPage.io
+  StatusPageMetricId:
+    Type: String
+    Description: Can be found in the advanced options of this metric on StatusPage
+  SignalFxApiKey:
+    Type: String
+    Description: Can be found in the administrative page under the "Access Tokens" section in SignalFX
+    NoEcho: true
+  SignalFxSignalFlowProgramBase64:
+    Type: String
+    Description: The SignalFlow program that will be executed to extract the datapoints from SignalFx
+
+Resources:
+  SignalFxStatusPageIntegrationLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code: dist/signalfx_to_statuspage_integration.zip
+      Handler: signalfx_statuspage_integration.lambda_handler
+      Role: !GetAtt SignalFxStatusPageIntegrationLambdaRole.Arn
+      Runtime: python3.6
+      Timeout: 300
+      MemorySize: 128
+      Environment:
+        Variables:
+          STATUSPAGE_API_KEY: !Ref StatusPageApiKey
+          STATUSPAGE_PAGE_ID: !Ref StatusPagePageId
+          STATUSPAGE_METRIC_ID: !Ref StatusPageMetricId
+          SIGNALFX_API_KEY: !Ref SignalFxApiKey
+          SIGNALFX_SIGNALFLOW_PROGRAM_BASE64: !Ref SignalFxSignalFlowProgramBase64
+
+  SignalFxStatusPageIntegrationLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  SignalFxStatusPageIntegrationTriggerEvent:
+    Type: AWS::Events::Rule
+    Properties:
+      ScheduleExpression: "rate(1 minute)"
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt SignalFxStatusPageIntegrationLambdaFunction.Arn
+          Id: SignalFxStatusPageIntegrationTriggerEvent
+
+  SignalFxStatusPageIntegrationLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref SignalFxStatusPageIntegrationLambdaFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt SignalFxStatusPageIntegrationTriggerEvent.Arn
